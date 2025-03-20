@@ -48,7 +48,9 @@ export async function middleware(request: NextRequest) {
   if (token && !isPublicPath) {
     try {
       console.log('🔍 Verifying token validity...')
-      const response = await fetch('http://localhost:3000/api/auth/me', {
+      // Utiliser la variable d'environnement pour l'URL de l'API au lieu de hardcoder localhost
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
+      const response = await fetch(`${apiUrl}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token.value}`
         }
