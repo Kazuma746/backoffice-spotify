@@ -26,6 +26,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  
+  // Utiliser la variable d'environnement pour l'URL de l'API
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
   const checkUser = async () => {
     try {
@@ -35,7 +38,7 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       
-      const response = await fetch('http://localhost:3000/api/auth/me', {
+      const response = await fetch(`${apiUrl}/auth/me`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -65,7 +68,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
