@@ -178,25 +178,25 @@ const TrackModal = ({ isOpen, onClose, onSubmit, track }) => {
     if (track) {
       setFormData({
         title: track.title || '',
-        artistId: track.artistId || '',
-        artistName: track.artist || '',
-        albumId: track.albumId || '',
-        albumTitle: track.album || '',
+        artistId: track.artist?.id || track.artistId || '',
+        artistName: track.artist?.name || '',
+        albumId: track.album?.id || track.albumId || '',
+        albumTitle: track.album?.title || '',
         genres: track.genres || []
       });
-      setArtistSearch(track.artist || '');
-      setAlbumSearch(track.album || '');
+      setArtistSearch(track.artist?.name || '');
+      setAlbumSearch(track.album?.title || '');
       setSelectedArtist({
-        id: track.artistId,
-        name: track.artist
+        id: track.artist?.id || track.artistId,
+        name: track.artist?.name || ''
       });
       setInitialArtist({
-        id: track.artistId,
-        name: track.artist
+        id: track.artist?.id || track.artistId,
+        name: track.artist?.name || ''
       });
       setSelectedAlbum({
-        id: track.albumId,
-        title: track.album
+        id: track.album?.id || track.albumId,
+        title: track.album?.title || ''
       });
     } else {
       setFormData({

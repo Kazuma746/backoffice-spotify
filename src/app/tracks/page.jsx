@@ -46,7 +46,8 @@ function TracksContent() {
       
       const formattedTracks = response.data.map(track => ({
         ...track,
-        artist: typeof track.artist === 'string' ? { name: track.artist } : track.artist || { name: 'Artiste Inconnu' }
+        artist: track.artistId ? { name: track.artistId.name, id: track.artistId._id } : { name: 'Artiste Inconnu' },
+        album: track.albumId ? { title: track.albumId.title, id: track.albumId._id } : { title: 'Album Inconnu' }
       }));
       
       setTracks(formattedTracks);
