@@ -26,9 +26,10 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  
-  // Utiliser la variable d'environnement pour l'URL de l'API
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+  // Utiliser le proxy Next.js pour éviter les problèmes CORS
+  // Au lieu d'utiliser directement l'API externe, on passe par notre propre API proxy
+  // configurée dans next.config.js
 
   const checkUser = async () => {
     try {
@@ -38,7 +39,7 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       
-      const response = await fetch(`${apiUrl}/auth/me`, {
+      const response = await fetch('/api/auth/me', {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -68,7 +69,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch(`${apiUrl}/auth/login`, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

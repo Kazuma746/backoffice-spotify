@@ -1,7 +1,11 @@
 export const fetchWithAuth = async (endpoint, options = {}) => {
   const token = localStorage.getItem('token');
   
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
+  // Utiliser le proxy Next.js pour éviter les problèmes CORS
+  // Construit l'URL pour utiliser le rewrite configuré dans next.config.js
+  const apiPath = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
+  
+  const response = await fetch(apiPath, {
     ...options,
     headers: {
       ...options.headers,

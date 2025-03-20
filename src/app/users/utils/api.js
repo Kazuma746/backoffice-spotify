@@ -21,11 +21,11 @@ export const extractBaseUrl = (signedUrl) => {
     const token = getAuthToken();
     if (!token) throw new Error('Non authentifié');
   
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-    const fullUrl = endpoint.startsWith('/api') ? `${baseUrl}${endpoint.substring(4)}` : `${baseUrl}${endpoint}`;
+    // Utiliser le proxy Next.js pour éviter les problèmes CORS
+    // Construit l'URL pour utiliser le rewrite configuré dans next.config.js
+    const apiPath = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
   
-  
-    const response = await fetch(fullUrl, {
+    const response = await fetch(apiPath, {
       ...options,
       headers: {
         ...options.headers,
@@ -40,7 +40,7 @@ export const extractBaseUrl = (signedUrl) => {
         statusText: response.statusText,
         data,
         endpoint,
-        fullUrl
+        apiPath
       });
       throw new Error(data.message || 'Une erreur est survenue');
     }

@@ -25,11 +25,15 @@ export const getAuthToken = () => {
   return cookie.split('=')[1];
 };
 
-export const fetchWithAuth = async (url, options = {}) => {
+export const fetchWithAuth = async (endpoint, options = {}) => {
   const token = getAuthToken();
   if (!token) throw new Error('Non authentifié');
 
-  const response = await fetch(url, {
+  // Utiliser le proxy Next.js pour éviter les problèmes CORS
+  // Construit l'URL pour utiliser le rewrite configuré dans next.config.js
+  const apiPath = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
+
+  const response = await fetch(apiPath, {
     ...options,
     headers: {
       ...options.headers,

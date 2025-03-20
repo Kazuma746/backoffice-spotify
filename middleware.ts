@@ -48,9 +48,10 @@ export async function middleware(request: NextRequest) {
   if (token && !isPublicPath) {
     try {
       console.log('🔍 Verifying token validity...')
-      // Utiliser la variable d'environnement pour l'URL de l'API au lieu de hardcoder localhost
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
-      const response = await fetch(`${apiUrl}/auth/me`, {
+      // Utiliser le proxy interne de Next.js pour éviter les problèmes CORS
+      // Construire une URL absolue basée sur l'hôte actuel
+      const baseUrl = request.nextUrl.origin
+      const response = await fetch(`${baseUrl}/api/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token.value}`
         }
