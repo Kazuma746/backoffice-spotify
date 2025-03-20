@@ -25,7 +25,7 @@ const nextConfig = {
   output: 'standalone',
   poweredByHeader: false,
   experimental: {
-    middleware: true
+    // L'option middleware a été supprimée car elle est obsolète
   }
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '../utils/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Container, Header, Title, Button, ErrorMessage } from './styles/TrackStyles';
@@ -9,7 +9,8 @@ import TrackModal from './components/TrackModal';
 import * as api from './utils/api';
 import Pagination from '../components/Pagination';
 
-export default function TracksPage() {
+// Composant interne qui utilise useSearchParams
+function TracksContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -136,5 +137,14 @@ export default function TracksPage() {
         track={selectedTrack}
       />
     </Container>
+  );
+}
+
+// Composant principal qui enveloppe dans Suspense
+export default function TracksPage() {
+  return (
+    <Suspense fallback={<Container>Chargement...</Container>}>
+      <TracksContent />
+    </Suspense>
   );
 } 

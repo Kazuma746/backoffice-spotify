@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useAuth } from '../utils/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Container, Header, Title, Button, ErrorMessage } from './styles/PlaylistStyles';
 import PlaylistTable from './components/PlaylistTable';
 import EditPlaylistModal from './components/EditPlaylistModal';
 import Pagination from '../components/Pagination';
+import * as api from './utils/api';
 
-export default function PlaylistsPage() {
+// Composant interne qui utilise useSearchParams
+function PlaylistsContent() {
     const { user, loading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -20,12 +22,7 @@ export default function PlaylistsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const itemsPerPage = 10;
 
-    const getAuthToken = () => {
-        const cookie = document.cookie.split(';').find(c => c.trim().startsWith('token='));
-        if (!cookie) return null;
-        return cookie.split('=')[1];
-    };
-
+    // Récupérer la page depuis l'URL ou utiliser 1 par défaut
     const currentPage = parseInt(searchParams.get('page') || '1');
 
     const updatePageInUrl = (newPage) => {
@@ -39,34 +36,19 @@ export default function PlaylistsPage() {
             router.push('/login');
             return;
         }
-        if (user) fetchPlaylists();
+        if (user) fetchPlaylists(currentPage);
     }, [user, loading, currentPage]);
 
-    const fetchPlaylists = async () => {
+    const fetchPlaylists = async (page = currentPage) => {
         try {
-            const response = await fetch(`/api/playlists/public?page=${currentPage}&limit=${itemsPerPage}`);
-            
-            if (!response.ok) {
-                throw new Error('Erreur lors de la récupération des playlists');
-            }
-
-            const data = await response.json();
-            
-            const formattedPlaylists = data.data.map(playlist => ({
-                id: playlist._id,
-                name: playlist.name,
-                creator: playlist.userId?.username || 'Utilisateur inconnu',
-                totalTracks: playlist.totalTracks || 0,
-                tracks: playlist.tracks || []
-            }));
-            
-            setPlaylists(formattedPlaylists);
-            setTotalPages(Math.ceil(data.pagination?.totalItems / itemsPerPage) || 1);
-            setTotalPlaylists(data.pagination?.totalItems || 0);
+            const data = await api.fetchWithAuth(`/api/playlists?page=${page}&limit=${itemsPerPage}`);
+            setPlaylists(data);
+            setTotalPages(Math.ceil(data.length / itemsPerPage) || 1);
+            setTotalPlaylists(data.length);
             setError('');
         } catch (error) {
-            console.error('Erreur dans fetchPlaylists:', error);
             setError(error.message);
+            if (error.message === 'Non authentifié') router.push('/login');
         }
     };
 
@@ -74,149 +56,50 @@ export default function PlaylistsPage() {
         if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette playlist ?')) return;
 
         try {
-            const response = await fetch(`/api/playlists/${id}/admin`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`
-                }
-            });
-
-            if (!response.ok) {
-                const data = await response.text();
-                const errorMessage = data ? JSON.parse(data).message : 'Erreur lors de la suppression de la playlist';
-                throw new Error(errorMessage);
-            }
-
-            await fetchPlaylists();
+            await api.fetchWithAuth(`/api/playlists/${id}`, { method: 'DELETE' });
+            
+            // Mettre à jour l'état local immédiatement
+            setPlaylists(prevPlaylists => prevPlaylists.filter(playlist => playlist._id !== id));
             setError('');
+            
+            // Rafraîchir la liste
+            fetchPlaylists(currentPage);
         } catch (error) {
             setError(error.message || "Erreur lors de la suppression de la playlist");
         }
     };
 
-    const handlePlaylistUpdate = async (formData) => {
-        try {
-            const token = getAuthToken();
-            if (!token) {
-                throw new Error('Non authentifié');
-            }
-
-            console.log('Updating playlist:', selectedPlaylist);
-            console.log('Form data:', formData);
-
-            // Vérification que l'ID est bien présent et formaté
-            if (!selectedPlaylist || !selectedPlaylist.id) {
-                throw new Error('ID de playlist invalide');
-            }
-
-            const requestBody = {
-                name: formData.name,
-                tracks: formData.trackIds
-            };
-
-            console.log('Request body:', requestBody);
-            console.log('Request URL:', `/api/playlists/${selectedPlaylist.id}/admin`);
-
-            const response = await fetch(`/api/playlists/${selectedPlaylist.id}/admin`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            console.log('Response status:', response.status);
-            const responseData = await response.text();
-            console.log('Response data:', responseData);
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Session expirée, veuillez vous reconnecter');
-                }
-                if (response.status === 404) {
-                    throw new Error('Playlist non trouvée');
-                }
-                const errorMessage = responseData ? JSON.parse(responseData).message : 'Erreur lors de la mise à jour de la playlist';
-                throw new Error(errorMessage);
-            }
-
-            await fetchPlaylists();
-            handleModalClose();
-        } catch (error) {
-            console.error('Erreur de mise à jour:', error);
-            setError(error.message);
-        }
-    };
-
-    const handleEdit = async (playlist) => {
-        try {
-            const token = getAuthToken();
-            if (!token) {
-                throw new Error('Non authentifié');
-            }
-
-            const response = await fetch(`/api/playlists/${playlist.id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Erreur lors de la récupération des détails de la playlist');
-            }
-
-            const data = await response.json();
-            const fullPlaylist = {
-                id: data.data._id,
-                name: data.data.name,
-                creator: data.data.userId?.username || 'Utilisateur inconnu',
-                totalTracks: data.data.totalTracks || 0,
-                tracks: data.data.tracks || []
-            };
-
-            setSelectedPlaylist(fullPlaylist);
-            setIsModalOpen(true);
-        } catch (error) {
-            console.error('Erreur lors de la récupération des détails:', error);
-            setError(error.message);
-        }
+    const handleEdit = (playlist) => {
+        setSelectedPlaylist(playlist);
+        setIsModalOpen(true);
     };
 
     const handleModalClose = () => {
-        setSelectedPlaylist(null);
         setIsModalOpen(false);
+        setSelectedPlaylist(null);
     };
 
-    const handleCreate = async () => {
+    const handleModalSubmit = async (formData) => {
         try {
-            const token = getAuthToken();
-            if (!token) {
-                throw new Error('Non authentifié');
+            if (selectedPlaylist) {
+                // Mode édition
+                await api.fetchWithAuth(`/api/playlists/${selectedPlaylist._id}`, {
+                    method: 'PUT',
+                    body: formData
+                });
+            } else {
+                // Mode création
+                await api.fetchWithAuth('/api/playlists', {
+                    method: 'POST',
+                    body: formData
+                });
             }
-
-            const response = await fetch('/api/playlists', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    name: 'Nouvelle Playlist',
-                    isPublic: true,
-                    tracks: []
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('Erreur lors de la création de la playlist');
-            }
-
-            await fetchPlaylists();
+            
             setError('');
+            handleModalClose();
+            fetchPlaylists(currentPage);
         } catch (error) {
-            console.error('Erreur de création:', error);
-            setError(error.message);
+            setError(error.message || "Une erreur est survenue");
         }
     };
 
@@ -227,7 +110,10 @@ export default function PlaylistsPage() {
         <Container>
             <Header>
                 <Title>Playlists ({totalPlaylists})</Title>
-                <Button onClick={handleCreate}>
+                <Button onClick={() => {
+                    setSelectedPlaylist(null);
+                    setIsModalOpen(true);
+                }}>
                     Nouvelle Playlist
                 </Button>
             </Header>
@@ -249,9 +135,18 @@ export default function PlaylistsPage() {
             <EditPlaylistModal
                 isOpen={isModalOpen}
                 onClose={handleModalClose}
-                onSubmit={handlePlaylistUpdate}
+                onSubmit={handleModalSubmit}
                 playlist={selectedPlaylist}
             />
         </Container>
+    );
+}
+
+// Composant principal qui enveloppe dans Suspense
+export default function PlaylistsPage() {
+    return (
+        <Suspense fallback={<Container>Chargement...</Container>}>
+            <PlaylistsContent />
+        </Suspense>
     );
 } 

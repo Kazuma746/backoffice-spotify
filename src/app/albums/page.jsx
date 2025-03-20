@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '../utils/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Container, Header, Title, Button, ErrorMessage } from './styles/AlbumStyles';
@@ -12,7 +12,8 @@ import CreateAlbumModal from './components/CreateAlbumModal';
 import EditAlbumModal from './components/EditAlbumModal';
 import { createAlbum, updateAlbum } from './utils/albumActions';
 
-export default function AlbumsPage() {
+// Composant interne qui utilise useSearchParams
+function AlbumsContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -190,5 +191,14 @@ export default function AlbumsPage() {
         album={selectedAlbum}
       />
     </Container>
+  );
+}
+
+// Composant principal qui enveloppe dans Suspense
+export default function AlbumsPage() {
+  return (
+    <Suspense fallback={<Container>Chargement...</Container>}>
+      <AlbumsContent />
+    </Suspense>
   );
 } 

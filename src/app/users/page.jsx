@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '../utils/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Container, Header, Title, Button, ErrorMessage } from './styles/UserStyles';
@@ -9,7 +9,8 @@ import Pagination from './components/Pagination';
 import UserModal from './components/UserModal';
 import * as api from './utils/api';
 
-export default function UsersPage() {
+// Composant interne qui utilise useSearchParams
+function UsersContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -157,5 +158,14 @@ export default function UsersPage() {
         user={selectedUser}
       />
     </Container>
+  );
+}
+
+// Composant principal qui enveloppe dans Suspense
+export default function UsersPage() {
+  return (
+    <Suspense fallback={<Container>Chargement...</Container>}>
+      <UsersContent />
+    </Suspense>
   );
 } 

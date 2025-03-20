@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '../utils/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Container, Header, Title, Button, ErrorMessage } from './styles/ArtistStyles';
@@ -9,7 +9,8 @@ import Pagination from './components/Pagination';
 import ArtistModal from './components/ArtistModal';
 import * as api from './utils/api';
 
-export default function ArtistsPage() {
+// Composant interne qui utilise useSearchParams
+function ArtistsContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -159,5 +160,14 @@ export default function ArtistsPage() {
         artist={selectedArtist}
       />
     </Container>
+  );
+}
+
+// Composant principal qui enveloppe dans Suspense
+export default function ArtistsPage() {
+  return (
+    <Suspense fallback={<Container>Chargement...</Container>}>
+      <ArtistsContent />
+    </Suspense>
   );
 } 
